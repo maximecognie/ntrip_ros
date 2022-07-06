@@ -60,7 +60,8 @@ class ntripconnect(Thread):
 
             ''' This now separates individual RTCM messages and publishes each one on the same topic '''
             data = response.read(1)
-            if len(data) != 0:
+            self.ntc.is_new_stream = rospy.get_param('~is_new_stream')
+            if len(data) != 0 and not(self.ntc.is_new_stream):
                 if ord(data[0]) == 211:
                     buf += data
                     data = response.read(2)
@@ -81,9 +82,15 @@ class ntripconnect(Thread):
                     buf = ""
                 else: print (data)
             else:
-                ''' If zero length data, close connection and reopen it '''
-                restart_count = restart_count + 1
-                print("Zero length ", restart_count)
+                if self.ntc.is_new_stream:
+                    self.ntc.ntrip_stream = rospy.get_param('~ntrip_stream')
+                    print("connecting to new MountPoint : " + "\"" 
+                        + self.ntc.ntrip_stream + "\"")
+                    rospy.set_param('~is_new_stream', False)
+                else:
+                    ''' If zero length data, close connection and reopen it '''
+                    restart_count = restart_count + 1
+                    print("Zero length ", restart_count)
                 connection.close()
                 connection = HTTPConnection(self.ntc.ntrip_server)
                 connection.request('GET', '/'+self.ntc.ntrip_stream, self.ntc.nmea_gga, headers)
@@ -105,6 +112,8 @@ class ntripclient:
         self.ntrip_pass = rospy.get_param('~ntrip_pass')
         self.ntrip_stream = rospy.get_param('~ntrip_stream')
         self.nmea_gga = rospy.get_param('~nmea_gga')
+        
+        self.is_new_stream = rospy.get_param('~is_new_stream', False)
 
         self.pub = rospy.Publisher(self.rtcm_topic, Message, queue_size=10)
 
