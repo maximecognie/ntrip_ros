@@ -113,8 +113,8 @@ class ntripclient:
         self.ntrip_stream = rospy.get_param('~ntrip_stream')
         self.nmea_gga = rospy.get_param('~nmea_gga')
         
-        self.is_new_stream = rospy.get_param('~is_new_stream', False)
-
+        rospy.set_param('~is_new_stream', False)
+        
         self.pub = rospy.Publisher(self.rtcm_topic, Message, queue_size=10)
 
         self.connection = None
