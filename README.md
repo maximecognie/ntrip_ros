@@ -1,7 +1,7 @@
 # ntrip_ros
 NTRIP client, imports RTCM streams to ROS topic
 
-This was forked from [https://github.com/ros-agriculture/ntrip_ros.git]
+This was forked from https://github.com/ros-agriculture/ntrip_ros.git
 
 Just added **is_new_stream** Ros parameter which allows you to change the **Mountpoint** while the node is still running. For that you just have to set the new value of the **ntrip_stream** parameter and set to **True** the **is_new_stream**
 
