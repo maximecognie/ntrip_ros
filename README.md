@@ -1,17 +1,8 @@
 # ntrip_ros
 NTRIP client, imports RTCM streams to ROS topic
 
-This was forked from github.com/tilk/ntrip_ros
+This was forked from [https://github.com/ros-agriculture/ntrip_ros.git]
 
-The CORS correction server that I am using does not have the /n/r characters. So I parsed out individual messages and published each one on the /rtcm ROS topic.
-It would crash with IncompleteRead error. I added patch at top of file.
-But the connection had closed and it would crash again. I ended up detecting zero length data and closing and reopening the data stream.
-It continues on without a glitch.
+Just added **is_new_stream** Ros parameter which allows you to change the **Mountpoint** while the node is still running. For that you just have to set the new value of the **ntrip_stream** parameter and set to **True** the **is_new_stream**
 
-You can generate the require $GPGGA message at this site. https://www.nmeagen.org/ Set a point near where you want to run and click "Generate NMEA file". Cut and paste the $GPGGA message into the launch file.
-
-I intend to use it with https://github.com/ros-agriculture/ublox_f9p
-
-It may also require this package: https://github.com/tilk/rtcm_msgs
-
-A similar NTRIP client (may be better than mine) is here: https://github.com/dayjaby/ntrip_ros
+Usefull to automatically set the **nearest Mountpoint** when you are using CORS network, in my setup I used it with : [CentipedeRTK network](https://centipede.fr/) CORS correction server, [U-blox ZED-F9P driver](https://github.com/ros-agriculture/ublox_f9p.git) and [Ntrip Browser](https://github.com/mcognie/ntripbrowser_ros.git) to find the nearest base station 
