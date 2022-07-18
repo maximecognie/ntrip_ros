@@ -12,6 +12,8 @@ from threading import Thread
 from httplib import HTTPConnection
 from httplib import IncompleteRead
 
+from socket import create_connection
+
 ''' This is to fix the IncompleteRead error
     http://bobrochel.blogspot.com/2010/11/bad-servers-chunked-encoding-and.html'''
 import httplib
@@ -19,10 +21,20 @@ def patch_http_response_read(func):
     def inner(*args):
         try:
             return func(*args)
-        except httplib.IncompleteRead, e:
+        except IncompleteRead, e:
             return e.partial
     return inner
 httplib.HTTPResponse.read = patch_http_response_read(httplib.HTTPResponse.read)
+
+REMOTE_SERVER = "1.1.1.1"
+def is_connected(hostname):
+    try:
+        s = create_connection((hostname, 53))
+        s.close()
+        return True
+    except:
+        pass
+    return False
 
 class ntripconnect(Thread):
     def __init__(self, ntc):
@@ -32,13 +44,27 @@ class ntripconnect(Thread):
 
     def run(self):
 
+        ''' Waits until an internet connection is established '''
+        c = False
+        while not c:
+            if is_connected(REMOTE_SERVER):
+                rospy.loginfo("Connected to internet")
+                c = True
+            else:
+                rospy.logwarn("No internet connection")
+                rospy.sleep(5)
+
         headers = {
             'Ntrip-Version': 'Ntrip/2.0',
             'User-Agent': 'NTRIP ntrip_ros',
             'Connection': 'close',
             'Authorization': 'Basic ' + b64encode(self.ntc.ntrip_user + ':' + str(self.ntc.ntrip_pass))
         }
-        connection = HTTPConnection(self.ntc.ntrip_server)
+
+        try:
+            connection = HTTPConnection(self.ntc.ntrip_server)
+        except:
+            pass
         connection.request('GET', '/'+self.ntc.ntrip_stream, self.ntc.nmea_gga, headers)
         response = connection.getresponse()
         if response.status != 200: raise Exception("blah")
@@ -57,7 +83,6 @@ class ntripconnect(Thread):
                 self.ntc.pub.publish(rmsg)
             else: buf += data
             '''
-
             ''' This now separates individual RTCM messages and publishes each one on the same topic '''
             data = response.read(1)
             self.ntc.is_new_stream = rospy.get_param('~is_new_stream')
