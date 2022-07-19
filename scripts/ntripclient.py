@@ -11,9 +11,8 @@ from threading import Thread
 
 from httplib import HTTPConnection
 from httplib import IncompleteRead
-from httplib import HTTPException
 
-from socket import create_connection
+import socket
 
 ''' This is to fix the IncompleteRead error
     http://bobrochel.blogspot.com/2010/11/bad-servers-chunked-encoding-and.html'''
@@ -30,7 +29,7 @@ httplib.HTTPResponse.read = patch_http_response_read(httplib.HTTPResponse.read)
 REMOTE_SERVER = "1.1.1.1"
 def is_connected(hostname):
     try:
-        s = create_connection((hostname, 53))
+        s = socket.create_connection((hostname, 53))
         s.close()
         return True
     except:
@@ -46,11 +45,11 @@ class ntripconnect(Thread):
     def run(self):
 
         ''' Waits until an internet connection is established '''
-        c = False
-        while not c:
+        connected = False
+        while not connected:
             if is_connected(REMOTE_SERVER):
                 rospy.loginfo("Connected to internet")
-                c = True
+                connected = True
             else:
                 rospy.logwarn("No internet connection")
                 rospy.sleep(5)
@@ -72,7 +71,10 @@ class ntripconnect(Thread):
         buf = ""
         rmsg = Message()
         restart_count = 0
+        reconnect = False
         while not self.stop:
+            self.ntc.is_new_stream = rospy.get_param('~is_new_stream')
+            
             '''
             data = response.read(100)
             pos = data.find('\r\n')
@@ -88,10 +90,12 @@ class ntripconnect(Thread):
             ''' This now separates individual RTCM messages and publishes each one on the same topic '''
             try:
                 data = response.read(1)
-            except:
+            except (socket.timeout) as e:
+                reconnect = is_connected(REMOTE_SERVER)
+                rospy.logwarn(e) 
                 pass
-            self.ntc.is_new_stream = rospy.get_param('~is_new_stream')
-            if len(data) != 0 and not(self.ntc.is_new_stream):
+
+            if len(data) != 0 and not(self.ntc.is_new_stream) and not(reconnect):
                 if ord(data[0]) == 211:
                     buf += data
                     data = response.read(2)
@@ -121,8 +125,15 @@ class ntripconnect(Thread):
                     ''' If zero length data, close connection and reopen it '''
                     restart_count = restart_count + 1
                     print("Zero length ", restart_count)
+                while reconnect:
+                    if is_connected(REMOTE_SERVER):
+                        rospy.loginfo("Connected to internet")
+                        reconnect = False
+                    else:
+                        rospy.logwarn("No internet connection")
+                        rospy.sleep(5)
                 connection.close()
-                connection = HTTPConnection(self.ntc.ntrip_server)
+                connection = HTTPConnection(self.ntc.ntrip_server, timeout=10)
                 connection.request('GET', '/'+self.ntc.ntrip_stream, self.ntc.nmea_gga, headers)
                 response = connection.getresponse()
                 if response.status != 200: raise Exception("blah")
