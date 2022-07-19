@@ -11,6 +11,7 @@ from threading import Thread
 
 from httplib import HTTPConnection
 from httplib import IncompleteRead
+from httplib import HTTPException
 
 from socket import create_connection
 
@@ -62,7 +63,7 @@ class ntripconnect(Thread):
         }
 
         try:
-            connection = HTTPConnection(self.ntc.ntrip_server)
+            connection = HTTPConnection(self.ntc.ntrip_server,timeout=10)
         except:
             pass
         connection.request('GET', '/'+self.ntc.ntrip_stream, self.ntc.nmea_gga, headers)
@@ -83,8 +84,12 @@ class ntripconnect(Thread):
                 self.ntc.pub.publish(rmsg)
             else: buf += data
             '''
+
             ''' This now separates individual RTCM messages and publishes each one on the same topic '''
-            data = response.read(1)
+            try:
+                data = response.read(1)
+            except:
+                pass
             self.ntc.is_new_stream = rospy.get_param('~is_new_stream')
             if len(data) != 0 and not(self.ntc.is_new_stream):
                 if ord(data[0]) == 211:
