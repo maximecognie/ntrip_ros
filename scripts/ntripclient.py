@@ -43,7 +43,12 @@ class ntripconnect(Thread):
         self.stop = False
 
     def run(self):
-
+        headers = {
+            'Ntrip-Version': 'Ntrip/2.0',
+            'User-Agent': 'NTRIP ntrip_ros',
+            'Connection': 'close',
+            'Authorization': 'Basic ' + b64encode(self.ntc.ntrip_user + ':' + str(self.ntc.ntrip_pass))
+        }
         ''' Waits until an internet connection is established '''
         connected = False
         while not connected:
@@ -53,18 +58,7 @@ class ntripconnect(Thread):
             else:
                 rospy.logwarn("No internet connection")
                 rospy.sleep(5)
-
-        headers = {
-            'Ntrip-Version': 'Ntrip/2.0',
-            'User-Agent': 'NTRIP ntrip_ros',
-            'Connection': 'close',
-            'Authorization': 'Basic ' + b64encode(self.ntc.ntrip_user + ':' + str(self.ntc.ntrip_pass))
-        }
-
-        try:
-            connection = HTTPConnection(self.ntc.ntrip_server,timeout=10)
-        except:
-            pass
+        connection = HTTPConnection(self.ntc.ntrip_server,timeout=10)
         connection.request('GET', '/'+self.ntc.ntrip_stream, self.ntc.nmea_gga, headers)
         response = connection.getresponse()
         if response.status != 200: raise Exception("blah")
@@ -134,10 +128,7 @@ class ntripconnect(Thread):
                     else:
                         rospy.logwarn("No internet connection")
                         rospy.sleep(5)
-                try:
-                    connection = HTTPConnection(self.ntc.ntrip_server, timeout=10)
-                except:
-                    pass
+                connection = HTTPConnection(self.ntc.ntrip_server, timeout=10)
                 connection.request('GET', '/'+self.ntc.ntrip_stream, self.ntc.nmea_gga, headers)
                 response = connection.getresponse()
                 if response.status != 200: raise Exception("blah")

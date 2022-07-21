@@ -6,7 +6,7 @@
  	 <param name="ntrip_server" value="caster.centipede.fr:2101"/>
  	 <param name="ntrip_user" value=""/>
  	 <param name="ntrip_pass" value=""/>
- 	 <param name="ntrip_stream" value="CRO2"/>
+ 	 <param name="ntrip_stream" value=""/>
  	 <param name="nmea_gga" value="$GPGGA,153951.874,4516.307,N,00553.490,E,1,12,1.0,0.0,M,0.0,M,,*63"/>
   </node>
 </launch>
