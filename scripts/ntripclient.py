@@ -93,6 +93,7 @@ class ntripconnect(Thread):
             except (socket.timeout) as e:
                 reconnect = is_connected(REMOTE_SERVER)
                 rospy.logwarn(e) 
+            except:
                 pass
 
             if len(data) != 0 and not(self.ntc.is_new_stream) and not(reconnect):
@@ -125,6 +126,7 @@ class ntripconnect(Thread):
                     ''' If zero length data, close connection and reopen it '''
                     restart_count = restart_count + 1
                     print("Zero length ", restart_count)
+                connection.close()
                 while reconnect:
                     if is_connected(REMOTE_SERVER):
                         rospy.loginfo("Connected to internet")
@@ -132,8 +134,10 @@ class ntripconnect(Thread):
                     else:
                         rospy.logwarn("No internet connection")
                         rospy.sleep(5)
-                connection.close()
-                connection = HTTPConnection(self.ntc.ntrip_server, timeout=10)
+                try:
+                    connection = HTTPConnection(self.ntc.ntrip_server, timeout=10)
+                except:
+                    pass
                 connection.request('GET', '/'+self.ntc.ntrip_stream, self.ntc.nmea_gga, headers)
                 response = connection.getresponse()
                 if response.status != 200: raise Exception("blah")
